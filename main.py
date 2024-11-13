@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from dotenv import load_dotenv
 
 from twilio_api import make_call, make_text
@@ -27,7 +27,7 @@ class Alert(BaseModel):
     silenceURL: Optional[str]
     dashboardURL: Optional[str]
     panelURL: Optional[str]
-    values: Optional[str]
+    values: Optional[Dict[str, Any]]
     valueString: Optional[str]
 
 
@@ -53,15 +53,15 @@ def send_text(
     alert_data: AlertBody,
     to_number: str = Query(..., description="The phone number to text"),
 ):
-    description = alert_data.commonAnnotations.get("description")
-    summary = alert_data.commonAnnotations.get("summary")
+    description = alert_data.commonAnnotations.get("description", "")
+    summary = alert_data.commonAnnotations.get("summary", "")
 
     text = make_text(
         account_sid=account_sid,
         account_token=auth_token,
         from_number=from_number,
         to_number=to_number,
-        message=description + " " + summary,
+        message=f"{summary} {description}".strip(),
     )
 
     return text.sid
@@ -72,14 +72,15 @@ def send_call(
     alert_data: AlertBody,
     to_number: str = Query(..., description="The phone number to call"),
 ):
-    description = alert_data.commonAnnotations.get("description")
-    summary = alert_data.commonAnnotations.get("summary")
+    description = alert_data.commonAnnotations.get("description", "")
+    summary = alert_data.commonAnnotations.get("summary", "")
 
     call = make_call(
         account_sid=account_sid,
         account_token=auth_token,
         from_number=from_number,
         to_number=to_number,
-        message=description + " " + summary,
+        message=f"{summary} {description}".strip(),
     )
+
     return call.sid
